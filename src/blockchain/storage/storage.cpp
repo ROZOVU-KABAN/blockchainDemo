@@ -4,16 +4,15 @@
 
 namespace blockchain
 {
-   namespace storage
-   {
-      IStorage* createStorage(E_STORAGE_TYPE type)
-      {
-	  if(type == EST_LOCAL)
-		  return new CStorageLocal();
-	  else if(type == EST_NONE)
-		  return CStorageNone();
-	  return 0;
-      }
-   }
+	namespace storage
+	{
+		IStorage* createStorage(E_STORAGE_TYPE type)
+		{
+			if(type == EST_LOCAL)
+				return new CStorageLocal();
+			else if(type == EST_NONE)
+				return new CStorageNone;
+			return 0;
+		}
+	}
 }
-

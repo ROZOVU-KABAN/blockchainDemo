@@ -9,6 +9,7 @@ namespace blockchain
     {
 	class IStorage
 	{
+	   public:
 	   virtual void loadChain(std::vector<CBlock*>* chain) = 0;
 	   virtual void load(CBlock* block) = 0;
 	   virtual void save(CBlock* block,uint64_t blockCount) = 0;

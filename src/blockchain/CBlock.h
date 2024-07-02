@@ -17,10 +17,10 @@ namespace blockchain
 	   time_t mCreatedTS;
 	   uint32_t mNonce;
       public:
-	   CBlock(CBlock* prevBlock,const uint8_t hash = 0);
+	   CBlock(CBlock* prevBlock,const uint8_t* hash = 0);
 	   ~CBlock();
 
-	   void calculateHash(uint8_t ret = 0);
+	   void calculateHash(uint8_t* ret = 0);
 	   uint8_t* getHash();
 	   std::string getHashStr();
 	   CBlock* getPrevBlock();

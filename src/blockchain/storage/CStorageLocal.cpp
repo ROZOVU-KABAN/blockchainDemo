@@ -1,13 +1,14 @@
-#include "CStorageLocal.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <string>
+#include <string.h>
 #include <stdexcept>
+
+#include "CStorageLocal.h"
 
 namespace blockchain
 {
-  namespace storage
-  {
+	namespace storage
+	{
     CStorageLocal::CStorageLocal()
     {
 	struct stat info;
@@ -37,7 +38,7 @@ namespace blockchain
 	    block = new CBlock(0,cur->getPrevHash());
 	    load(block);
 	    cur->setPrevBlock(block);
-	    chain->insert(chain->beging(),block);
+	    chain->insert(chain->begin(),block);
 	    cur = block;
 	  }
 
@@ -52,7 +53,7 @@ namespace blockchain
     void CStorageLocal::load(CBlock* block)
     {
 	std::string path(mBasePath + block->getHashStr() );
-	FILE* file = ofpen(path.c_str(),"rb");
+	FILE* file = fopen(path.c_str(),"rb");
 	if(file)
 	{
 	   size_t r;
@@ -62,7 +63,7 @@ namespace blockchain
 	   if(r!=1)
 		  throw std::runtime_error("Could not read version");
 
-	   uint8_t hash[SHA256_DIGEST_LENGTH,file];
+	   uint8_t hash[SHA256_DIGEST_LENGTH];
 	   r = fread(hash,sizeof(uint8_t),SHA256_DIGEST_LENGTH,file);
 	   if(r!=1)
 		   throw std::runtime_error("Could not read hash");
@@ -104,17 +105,74 @@ namespace blockchain
 		ptr+=r;
 	   } 
 
-	   block->setAllocateData(data,dataSize);
+	   block->setAllocatedData(data,dataSize);
 	   fclose(file);	   
 	}
 	else 
 		throw std::runtime_error("Block file not found");
     }
 
+
+    void CStorageLocal::save(CBlock* block, uint64_t blockCount)
+    {
+	std::string path(mBasePath + block->getHashStr());
+	FILE* file = fopen(path.c_str(),"wb");
+	if(file)
+	{
+		fwrite(&Version,sizeof(uint32_t),1,file);
+		fwrite(block->getHash(),sizeof(uint8_t),SHA256_DIGEST_LENGTH,file);
+		fwrite(block->getPrevHash(),sizeof(uint8_t),SHA256_DIGEST_LENGTH,file);
+		time_t createdTS = block->getCreatedTS();
+		fwrite(&createdTS,sizeof(time_t),1,file);
+		uint32_t nonce = block->getNonce();
+		fwrite(&nonce,sizeof(uint32_t),1,file);
+		uint32_t dataSize = block->getDataSize();
+		fwrite(&dataSize,sizeof(uint32_t),1,file);
+		fwrite(block->getData(),sizeof(uint8_t),dataSize,file);
+		fclose(file);
+
+		mMetaData["LAST_BLOCK_HASH"] = std::basic_string<uint8_t>((uint8_t*)block->getHash(),SHA256_DIGEST_LENGTH);
+		mMetaData["LAST_BLOCK_HASH_STR"] = std::basic_string<uint8_t>((uint8_t*)block->getHashStr().data(),block->getHashStr().size());
+		mMetaData["BLOCK_COUNT"] = std::basic_string<uint8_t>((uint8_t*)&blockCount,sizeof(uint64_t));
+		saveMetaData();
+	}
+    }
+
+     
+	void CStorageLocal::saveMetaData()
+	{
+		std::string metaDataFn(mBasePath + "metadata");
+		FILE* file = fopen(metaDataFn.c_str(),"wb");
+		if(file)
+		{
+			fwrite(&Version,sizeof(uint32_t),1,file);
+			uint64_t varCount = mMetaData.size();
+			fwrite(&varCount,sizeof(uint64_t),1,file);
+			if(varCount != 0)
+			{
+				for(std::map<std::string,std::basic_string<uint8_t>>::iterator it = mMetaData.begin();it!=mMetaData.end();it++)
+				{
+					std::string varName(it->first);
+					uint32_t varSize = varName.size();
+					if(varSize == 0)
+						continue;
+					fwrite(&varSize,sizeof(uint32_t),1,file);
+					fwrite(varName.c_str(),sizeof(char),varName.size(),file);
+					std::basic_string<uint8_t> varVal(it->second);
+					uint32_t valSize = varVal.size();
+					fwrite(&valSize,sizeof(uint32_t),1,file);
+					if(valSize != 0)
+						fwrite(varVal.c_str(),sizeof(uint8_t),varVal.size(),file);
+				}
+			}
+			fclose(file);
+		}
+	}
+
     void CStorageLocal::loadMetaData()
     {
 	std::string metaDataFn(mBasePath + "metadata");
-	FILE* file = fopen(metaDAtaFn.c_str(),"rb");
+	FILE* file = fopen(metaDataFn.c_str(),"rb");
 	if(file)
 	{
 	   size_t r=0;
@@ -126,7 +184,7 @@ namespace blockchain
 	   uint64_t varCount = 0;
 	   r = fread(&varCount,sizeof(uint64_t),1,file);
 	   if(r!=1)
-		   throw std::runtime_erroe("Could not read varCount");
+		   throw std::runtime_error("Could not read varCount");
 
 	   for(uint64_t n = 0;n<varCount;++n)
 	   {
@@ -159,5 +217,16 @@ namespace blockchain
 	}
 	   fclose(file);
     }
-  }
+    }
+
+	void CStorageLocal::dispose()
+	{
+		delete this;
+	}
+    
+    }
 }
+
+
+
+

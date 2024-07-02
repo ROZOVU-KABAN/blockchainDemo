@@ -3,16 +3,20 @@
 #include <string.h>
 #include <unistd.h>
 
-using namespace blockchain;
-
-CBlock::CBlock(CBlock* prevBlock)
+namespace blockchain
+{
+CBlock::CBlock(CBlock* prevBlock, const uint8_t* hash)
 {
   mPrevBlock = prevBlock;
-  memset(mHash,SHA256_DIGEST_LENGTH,0);
-  if(mPrevBlock) 
-	  memcpy(mPrevHash,mPrevBlock->getHash(),SHA256_DIGEST_LENGTH);
+  if(hash) 
+	  memcpy(mHash,hash,SHA256_DIGEST_LENGTH);
   else 
-	  memset(mPrevHash,SHA256_DIGEST_LENGTH,0);
+	  memset(mHash,0,SHA256_DIGEST_LENGTH);
+  if(mPrevBlock)
+	  memcpy(mPrevHash,mPrevBlock->getHash(),SHA256_DIGEST_LENGTH);
+  else
+	  memset(mPrevHash,0,SHA256_DIGEST_LENGTH);
+
   mCreatedTS = time(0);
   mNonce = 0;
   mDataSize = 0;
@@ -20,7 +24,14 @@ CBlock::CBlock(CBlock* prevBlock)
   calculateHash();
 }
 
-void CBlock::calculateHash()
+CBlock::~CBlock()
+{
+	if(mData)
+		delete[] mData;
+}
+
+
+void CBlock::calculateHash(uint8_t* ret)
 {
   uint32_t sz = (SHA256_DIGEST_LENGTH * sizeof(uint8_t) + sizeof(time_t) + mDataSize + sizeof(uint32_t));
   uint8_t* buf = new uint8_t[sz];
@@ -42,7 +53,12 @@ void CBlock::calculateHash()
   SHA256_CTX sha256;
   SHA256_Init(&sha256);
   SHA256_Update(&sha256,buf,sz);
-  SHA256_Final(mHash,&sha256);
+  if(ret)
+	SHA256_Final(mHash,&sha256);
+  else 
+	  SHA256_Final(mHash,&sha256);
+
+  delete[] buf;
 }
 
 
@@ -55,8 +71,13 @@ uint8_t* CBlock::getHash()
 std::string CBlock::getHashStr()
 {
    char buf[SHA256_DIGEST_LENGTH * 2 + 1];
+   char* ptr = buf;
+   memset(buf,0,SHA256_DIGEST_LENGTH);
    for(uint32_t n = 0; n < SHA256_DIGEST_LENGTH; n++)
-	   sprintf(buf + (n*2),"%02x",mHash[n]);
+   {
+	   sprintf(ptr,"%02x",mHash[n]);
+	   ptr+=2;
+   }
    buf[SHA256_DIGEST_LENGTH * 2] = 0;
    return std::string(buf);
 }
@@ -70,12 +91,13 @@ void CBlock::appendData(uint8_t* data,uint32_t size)
 {
    uint8_t* newData = new uint8_t[mDataSize+size];
    uint8_t* ptr = newData;
-   if(!mDataSize)
+   if(mDataSize != 0)
    {
       memcpy(ptr,mData,mDataSize);
       ptr+=mDataSize;
       delete[] mData;
    }
+
    memcpy(ptr,data,size);
    mData = newData;
    mDataSize+=size;
@@ -111,7 +133,7 @@ bool CBlock::hasHash()
   return false;
 }
 
-bool CBlock::hashPrevHash()
+bool CBlock::hasPrevHash()
 {
   for(uint32_t n = 0; n < SHA256_DIGEST_LENGTH; ++n)
       if(mPrevHash[n] != 0) return true;
@@ -122,7 +144,7 @@ uint8_t* CBlock::getPrevHash()
 { return mPrevHash; }
 
 
-std::string Cblock::getPrevHashStr()
+std::string CBlock::getPrevHashStr()
 {
   char buf[SHA256_DIGEST_LENGTH*2 + 1];
   char* ptr = buf;
@@ -144,7 +166,7 @@ void CBlock::setPrevHash(const uint8_t* prevHash)
 void CBlock::setPrevBlock(CBlock* block)
 {
 	mPrevBlock = block;
-	setPrevHash(mPreavHash->getHash());
+	setPrevHash(mPrevBlock->getHash());
 }
 
 void CBlock::setCreatedTS(time_t createdTS)
@@ -161,4 +183,31 @@ time_t CBlock::getCreatedTS()
 void CBlock::setNonce(uint32_t nonce)
 {
   mNonce = nonce;
+}
+
+uint32_t CBlock::getDataSize()
+{
+	return mDataSize;
+}
+
+uint8_t* CBlock::getData()
+{
+	return mData;
+}
+
+void CBlock::setAllocatedData(uint8_t* data,uint32_t sz)
+{
+	if(mData)
+		delete[] mData;
+	mData = data;
+	mDataSize = sz;
+}
+
+bool CBlock::isValid()
+{
+	uint8_t hash[SHA256_DIGEST_LENGTH];
+	memset(hash,0,SHA256_DIGEST_LENGTH);
+	calculateHash(hash);
+	return memcmp(mHash,hash,SHA256_DIGEST_LENGTH) == 0;
+}
 }

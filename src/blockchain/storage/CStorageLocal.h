@@ -1,4 +1,4 @@
-#indef __C_STORAGE_LOCAL_INCLUDED__
+#ifndef __C_STORAGE_LOCAL_INCLUDED__
 #define __C_STORAGE_LOCAL_INCLUDED__
 
 #include "IStorage.h"
@@ -12,7 +12,7 @@ namespace blockchain
 {
   namespace storage
   {
-     class CStorageLocal: public IStorage
+     class CStorageLocal : public IStorage
      {
      private:
 	const uint32_t Version = 1;
@@ -21,10 +21,10 @@ namespace blockchain
 	std::map<std::string,std::basic_string<uint8_t>> mMetaData;
 
      public:
-	CStorageLoca
+	CStorageLocal();
 	~CStorageLocal();
 
-	virtual void loadChain(std::vector<CBlock*> chain);
+	virtual void loadChain(std::vector<CBlock*>* chain);
 	virtual void load(CBlock* block);
 	virtual void save(CBlock* block,uint64_t blockCount);
 
@@ -32,7 +32,7 @@ namespace blockchain
 	void saveMetaData();
 
 	virtual void dispose();
-     f
+     };
   }
 }
 #endif

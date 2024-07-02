@@ -15,7 +15,7 @@ CChain::CChain(int difficulty, storage::E_STORAGE_TYPE storageType)
 
 CChain::~CChain()
 {
-	mStorage->dispose;
+	mStorage->dispose();
 	for(std::vector<CBlock*>::iterator it = mChain.begin();it != mChain.end();it++)
 		delete (*it);
 }
@@ -49,8 +49,10 @@ void CChain::load()
 		nextBlock(false);
 }
 
-size_t CChainLLgetBlockCount()
-{ return mChain.size();}
+size_t CChain::getBlockCount()
+{
+       	return mChain.size();
+}
 
 
 bool CChain::isValid()

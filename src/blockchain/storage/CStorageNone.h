@@ -6,16 +6,16 @@
 
 namespace blockchain
 {
-  namespace 
+  namespace storage 
   {
-     class CStorageNone:: public IStorage
+     class CStorageNone: public IStorage
      {
 	public:
-		virtual void load Chain(std::vector<CBlock*> chain){}
-		virtual void load(CBlock* block){}
-		virtual void save(CBlock* block,uint64_t blockCount){}
+		virtual void loadChain(std::vector<CBlock*>* chain) {};
+		virtual void load(CBlock* block) {}
+		virtual void save(CBlock* block, uint64_t blockCount) {}
 
-		virtual void dispose(){delete this;}
+		virtual void dispose() { delete this; }
      };
   }
 }
