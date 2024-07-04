@@ -21,7 +21,8 @@ CBlock::CBlock(CBlock* prevBlock, const uint8_t* hash)
   mNonce = 0;
   mDataSize = 0;
   mData = 0;
-  calculateHash();
+  if(!hash)
+ 	 calculateHash();
 }
 
 CBlock::~CBlock()
